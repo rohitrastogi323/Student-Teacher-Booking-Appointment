@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Teachers - Student Dashboard</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-user-graduate fa-2x"></i>
+                <h2>Student Panel</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="search.html" class="sidebar-link active">
+                    <i class="fas fa-search"></i>
+                    <span>Find Teachers</span>
+                </a>
+                <a href="book.html" class="sidebar-link">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>My Bookings</span>
+                </a>
+                <a href="messages.html" class="sidebar-link">
+                    <i class="fas fa-comments"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Find Teachers</h1>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="refreshTeachers()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Filters -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <div style="position: relative;">
+                            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--gray-600);"></i>
+                            <input type="text" id="searchInput" class="form-input" placeholder="Search by name, subject, or department..." 
+                                   style="padding-left: 2.5rem;" onkeyup="searchTeachers()">
+                        </div>
+                    </div>
+                    <select id="deptFilter" class="form-select" style="width: auto; min-width: 180px;" onchange="filterTeachers()">
+                        <option value="">All Departments</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="English">English</option>
+                        <option value="History">History</option>
+                        <option value="Engineering">Engineering</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="resetSearch()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Count -->
+            <div style="margin-bottom: 1rem; color: var(--gray-600);">
+                Found <strong id="resultsCount">0</strong> teachers
+            </div>
+
+            <!-- Teachers Grid -->
+            <div id="teachersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+                <!-- Teachers will be populated here -->
+                <div class="card" style="text-align: center; padding: 3rem; grid-column: 1 / -1;">
+                    <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color); margin-bottom: 1rem;"></i>
+                    <p>Loading teachers...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Teacher Details Modal -->
+    <div id="teacherModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeTeacherModal()">&times;</span>
+            <div id="teacherDetails">
+                <!-- Teacher details populated by JavaScript -->
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="closeTeacherModal()">Close</button>
+                <button class="btn btn-primary" onclick="bookWithTeacher()">
+                    <i class="fas fa-calendar-plus"></i> Book Appointment
+                </button>
+                <button class="btn btn-success" onclick="messageTeacher()">
+                    <i class="fas fa-comment"></i> Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2>Book Appointment</h2>
+            <form id="bookingForm" onsubmit="submitBooking(event)">
+                <input type="hidden" id="bookingTeacherId">
+                <input type="hidden" id="bookingSlotId">
+                
+                <div class="form-group">
+                    <label class="form-label">Teacher</label>
+                    <input type="text" id="bookingTeacherName" class="form-input" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Select Date & Time *</label>
+                    <select id="bookingSlot" class="form-select" required onchange="updateSlotSelection()">
+                        <option value="">Choose a time slot...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Purpose of Appointment *</label>
+                    <select id="bookingPurpose" class="form-select" required>
+                        <option value="">Select purpose...</option>
+                        <option value="Academic Advising">Academic Advising</option>
+                        <option value="Project Discussion">Project Discussion</option>
+                        <option value="Doubt Clarification">Doubt Clarification</option>
+                        <option value="Career Guidance">Career Guidance</option>
+                        <option value="Research Discussion">Research Discussion</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Message to Teacher</label>
+                    <textarea id="bookingMessage" class="form-textarea" rows="3" placeholder="Briefly describe what you'd like to discuss..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calendar-check"></i> Request Booking
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeMessageModal()">&times;</span>
+            <h2>Send Message</h2>
+            <form id="messageForm" onsubmit="sendMessageToTeacher(event)">
+                <input type="hidden" id="messageTeacherId">
+                
+                <div class="form-group">
+                    <label class="form-label">To</label>
+                    <input type="text" id="messageTeacherName" class="form-input" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Message *</label>
+                    <textarea id="messageContent" class="form-textarea" rows="4" required 
+                              placeholder="Type your message here..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeMessageModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../js/logger.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/student.js"></script>
+    <script>
+        let selectedTeacherId = null;
+        let availableTeachers = [];
+        let teacherSlots = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!requireAuth('student')) return;
+            
+            try {
+                initializeFirebase();
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+            }
+            
+            loadAvailableTeachers();
+        });
+    </script>
+</body>
+</html>

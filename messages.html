@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Teacher Dashboard</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                <h2>Teacher Panel</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="schedule.html" class="sidebar-link">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Schedule</span>
+                </a>
+                <a href="appointments.html" class="sidebar-link">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Appointments</span>
+                </a>
+                <a href="messages.html" class="sidebar-link active">
+                    <i class="fas fa-comments"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Messages</h1>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="markAllAsRead()">
+                        <i class="fas fa-check-double"></i> Mark All Read
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshMessages()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; height: calc(100vh - 200px);">
+                <!-- Message List -->
+                <div class="card" style="overflow: hidden; display: flex; flex-direction: column;">
+                    <div class="card-header">
+                        <h3 class="card-title">Conversations</h3>
+                        <span class="badge badge-warning" id="unreadCount">0</span>
+                    </div>
+                    <div id="messageList" style="overflow-y: auto; flex: 1;">
+                        <!-- Message threads will be populated here -->
+                        <div class="text-center" style="padding: 2rem;">
+                            <p>Loading messages...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Detail / Chat -->
+                <div class="card" style="overflow: hidden; display: flex; flex-direction: column;">
+                    <div id="chatHeader" class="card-header" style="display: none;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <i class="fas fa-user-circle fa-2x"></i>
+                            <div>
+                                <h3 class="card-title" id="chatStudentName">Student Name</h3>
+                                <p style="font-size: 0.875rem; color: var(--gray-600); margin: 0;" id="chatStudentInfo">Student Info</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="chatMessages" style="overflow-y: auto; flex: 1; padding: 1rem; background: var(--gray-100);">
+                        <!-- Select a conversation message -->
+                        <div class="text-center" style="padding: 3rem; color: var(--gray-600);">
+                            <i class="fas fa-comments fa-3x" style="margin-bottom: 1rem; color: var(--gray-300);"></i>
+                            <p>Select a conversation to view messages</p>
+                        </div>
+                    </div>
+
+                    <div id="chatInput" style="padding: 1rem; border-top: 1px solid var(--gray-200); display: none;">
+                        <form onsubmit="sendReply(event)" style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="replyMessage" class="form-input" placeholder="Type your reply..." style="flex: 1;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .message-thread {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .message-thread:hover {
+            background: var(--gray-100);
+        }
+
+        .message-thread.active {
+            background: rgba(79, 70, 229, 0.1);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .message-thread.unread {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .thread-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .thread-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .thread-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .thread-preview {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .thread-meta {
+            text-align: right;
+        }
+
+        .thread-time {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+        }
+
+        .chat-message {
+            max-width: 70%;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-lg);
+            position: relative;
+        }
+
+        .chat-message.received {
+            background: white;
+            margin-right: auto;
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .chat-message.sent {
+            background: var(--primary-color);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .chat-message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="../../js/logger.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/teacher.js"></script>
+    <script>
+        let selectedThreadId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!requireAuth('teacher')) return;
+            
+            try {
+                initializeFirebase();
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+            }
+            
+            loadMessages();
+        });
+    </script>
+</body>
+</html>

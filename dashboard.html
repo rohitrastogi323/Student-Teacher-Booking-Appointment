@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - Student-Teacher Booking System</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                <h2>Teacher Panel</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="dashboard.html" class="sidebar-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="schedule.html" class="sidebar-link">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Schedule</span>
+                </a>
+                <a href="appointments.html" class="sidebar-link">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Appointments</span>
+                </a>
+                <a href="messages.html" class="sidebar-link">
+                    <i class="fas fa-comments"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Teacher Dashboard</h1>
+                <div class="user-info">
+                    <span id="teacherName">Teacher</span>
+                    <i class="fas fa-user-circle fa-lg"></i>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="features-grid" style="margin-bottom: 2rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Today's Appointments</h3>
+                        <i class="fas fa-calendar-day fa-2x" style="color: var(--primary-color);"></i>
+                    </div>
+                    <h2 id="todayAppointments" style="font-size: 2.5rem; color: var(--dark-color);">0</h2>
+                    <p style="color: var(--gray-600);">Scheduled for today</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Pending Requests</h3>
+                        <i class="fas fa-clock fa-2x" style="color: var(--warning-color);"></i>
+                    </div>
+                    <h2 id="pendingRequests" style="font-size: 2.5rem; color: var(--dark-color);">0</h2>
+                    <p style="color: var(--gray-600);">Awaiting your approval</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Total Students</h3>
+                        <i class="fas fa-user-graduate fa-2x" style="color: var(--success-color);"></i>
+                    </div>
+                    <h2 id="totalStudentsMet" style="font-size: 2.5rem; color: var(--dark-color);">0</h2>
+                    <p style="color: var(--gray-600);">Unique students</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">New Messages</h3>
+                        <i class="fas fa-envelope fa-2x" style="color: var(--accent-color);"></i>
+                    </div>
+                    <h2 id="newMessages" style="font-size: 2.5rem; color: var(--dark-color);">0</h2>
+                    <p style="color: var(--gray-600);">Unread messages</p>
+                </div>
+            </div>
+
+            <!-- Upcoming Appointments -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Upcoming Appointments</h3>
+                    <a href="appointments.html" class="btn btn-primary">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Student</th>
+                                <th>Purpose</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="upcomingTable">
+                            <tr>
+                                <td colspan="6" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quick Actions</h3>
+                </div>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <a href="schedule.html" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Schedule New Slot
+                    </a>
+                    <a href="messages.html" class="btn btn-secondary">
+                        <i class="fas fa-comment"></i> Check Messages
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../js/logger.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/teacher.js"></script>
+    <script src="../../js/ai-assistant.js"></script>
+</body>
+</html>

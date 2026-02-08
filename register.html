@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration - Student-Teacher Booking System</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    
+    <div class="form-container" style="max-width: 600px; width: 100%;">
+        <div class="text-center" style="margin-bottom: 2rem;">
+            <i class="fas fa-user-graduate fa-3x" style="color: var(--primary-color); margin-bottom: 1rem;"></i>
+            <h1 style="color: var(--dark-color); margin-bottom: 0.5rem;">Student Registration</h1>
+            <p style="color: var(--gray-600);">Create your account to book appointments with teachers</p>
+        </div>
+
+        <form id="registrationForm" onsubmit="registerStudent(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" id="firstName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name *</label>
+                    <input type="text" id="lastName" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" id="email" class="form-input" required placeholder="your.email@example.com">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Password *</label>
+                    <input type="password" id="password" class="form-input" required minlength="6" placeholder="Min 6 characters">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password *</label>
+                    <input type="password" id="confirmPassword" class="form-input" required placeholder="Re-enter password">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Student ID *</label>
+                    <input type="text" id="studentId" class="form-input" required placeholder="e.g., STU2024001">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" id="phone" class="form-input" placeholder="Your contact number">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Department *</label>
+                    <select id="department" class="form-select" required>
+                        <option value="">Select Department</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="English">English</option>
+                        <option value="History">History</option>
+                        <option value="Engineering">Engineering</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Year of Study *</label>
+                    <select id="yearOfStudy" class="form-select" required>
+                        <option value="">Select Year</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                        <option value="5">5th Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Program/Major *</label>
+                <input type="text" id="program" class="form-input" required placeholder="e.g., B.Tech Computer Science">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" id="terms" required style="margin-right: 0.5rem;">
+                    I agree to the <a href="#" style="color: var(--primary-color);">Terms and Conditions</a> and 
+                    <a href="#" style="color: var(--primary-color);">Privacy Policy</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-user-plus"></i> Register
+            </button>
+        </form>
+
+        <div class="text-center" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200);">
+            <p style="color: var(--gray-600);">
+                Already have an account? 
+                <a href="login.html" style="color: var(--primary-color); font-weight: 600;">Login here</a>
+            </p>
+            <p style="margin-top: 1rem;">
+                <a href="../../index.html" style="color: var(--gray-600);">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </p>
+        </div>
+
+        <!-- Registration Status -->
+        <div id="registrationStatus" style="display: none; margin-top: 1.5rem; padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../js/logger.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/student.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                initializeFirebase();
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>

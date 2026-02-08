@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approve Students - Admin Dashboard</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-user-shield fa-2x"></i>
+                <h2>Admin Panel</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="teachers.html" class="sidebar-link">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Manage Teachers</span>
+                </a>
+                <a href="students.html" class="sidebar-link active">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Approve Students</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Student Registration Approvals</h1>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-success" onclick="approveAll()">
+                        <i class="fas fa-check-double"></i> Approve All
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshStudents()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 1rem; border-bottom: 2px solid var(--gray-200);">
+                    <button class="tab-btn active" onclick="filterByStatus('all')" id="tab-all">
+                        All Students
+                    </button>
+                    <button class="tab-btn" onclick="filterByStatus('pending')" id="tab-pending">
+                        Pending
+                        <span class="badge badge-warning" id="pendingCount">0</span>
+                    </button>
+                    <button class="tab-btn" onclick="filterByStatus('approved')" id="tab-approved">
+                        Approved
+                    </button>
+                    <button class="tab-btn" onclick="filterByStatus('rejected')" id="tab-rejected">
+                        Rejected
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Department</th>
+                                <th>Registration Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTable">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading students...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noStudents" class="text-center" style="padding: 3rem; display: none;">
+                    <i class="fas fa-user-graduate fa-3x" style="color: var(--gray-300); margin-bottom: 1rem;"></i>
+                    <p>No students found in this category.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Student Details Modal -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeStudentModal()">&times;</span>
+            <h2>Student Details</h2>
+            <div id="studentDetails">
+                <!-- Student details will be populated here -->
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="closeStudentModal()">Close</button>
+                <button class="btn btn-danger" onclick="rejectStudent()" id="rejectBtn">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+                <button class="btn btn-success" onclick="approveStudent()" id="approveBtn">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .tab-btn {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="../../js/logger.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/admin.js"></script>
+    <script>
+        let currentFilter = 'all';
+        let selectedStudentId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!requireAuth('admin')) return;
+            
+            try {
+                initializeFirebase();
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+            }
+            
+            loadStudents();
+        });
+
+        function filterByStatus(status) {
+            currentFilter = status;
+            
+            // Update active tab
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${status}`).classList.add('active');
+            
+            loadStudents();
+        }
+
+        function openStudentModal(studentId) {
+            selectedStudentId = studentId;
+            const modal = document.getElementById('studentModal');
+            modal.style.display = 'block';
+            
+            // Load student details
+            const student = getStudentById(studentId);
+            if (student) {
+                document.getElementById('studentDetails').innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Student ID:</strong> ${student.studentId}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Name:</strong> ${student.name}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Email:</strong> ${student.email}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Department:</strong> ${student.department}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Registration Date:</strong> ${formatDate(student.registrationDate)}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Status:</strong> 
+                        <span class="badge badge-${student.status === 'approved' ? 'success' : student.status === 'rejected' ? 'danger' : 'warning'}">
+                            ${student.status.toUpperCase()}
+                        </span>
+                    </div>
+                `;
+                
+                // Show/hide approve/reject buttons based on status
+                const approveBtn = document.getElementById('approveBtn');
+                const rejectBtn = document.getElementById('rejectBtn');
+                
+                if (student.status === 'approved') {
+                    approveBtn.style.display = 'none';
+                    rejectBtn.style.display = 'inline-flex';
+                } else if (student.status === 'rejected') {
+                    approveBtn.style.display = 'inline-flex';
+                    rejectBtn.style.display = 'none';
+                } else {
+                    approveBtn.style.display = 'inline-flex';
+                    rejectBtn.style.display = 'inline-flex';
+                }
+            }
+        }
+
+        function closeStudentModal() {
+            document.getElementById('studentModal').style.display = 'none';
+            selectedStudentId = null;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('studentModal');
+            if (event.target === modal) {
+                closeStudentModal();
+            }
+        }
+    </script>
+</body>
+</html>

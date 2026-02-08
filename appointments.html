@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Appointments - Teacher Dashboard</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                <h2>Teacher Panel</h2>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="schedule.html" class="sidebar-link">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Schedule</span>
+                </a>
+                <a href="appointments.html" class="sidebar-link active">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Appointments</span>
+                </a>
+                <a href="messages.html" class="sidebar-link">
+                    <i class="fas fa-comments"></i>
+                    <span>Messages</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>My Appointments</h1>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="refreshAppointments()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 1rem; border-bottom: 2px solid var(--gray-200);">
+                    <button class="tab-btn active" onclick="filterAppointments('all')" id="tab-all">
+                        All
+                    </button>
+                    <button class="tab-btn" onclick="filterAppointments('pending')" id="tab-pending">
+                        Pending
+                    </button>
+                    <button class="tab-btn" onclick="filterAppointments('approved')" id="tab-approved">
+                        Approved
+                    </button>
+                    <button class="tab-btn" onclick="filterAppointments('completed')" id="tab-completed">
+                        Completed
+                    </button>
+                    <button class="tab-btn" onclick="filterAppointments('cancelled')" id="tab-cancelled">
+                        Cancelled
+                    </button>
+                </div>
+            </div>
+
+            <!-- Appointments Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Student</th>
+                                <th>Purpose</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointmentsTable">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading appointments...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noAppointments" class="text-center" style="padding: 3rem; display: none;">
+                    <i class="fas fa-calendar fa-3x" style="color: var(--gray-300); margin-bottom: 1rem;"></i>
+                    <p>No appointments found in this category.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Appointment Details Modal -->
+    <div id="appointmentModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeAppointmentModal()">&times;</span>
+            <h2>Appointment Details</h2>
+            <div id="appointmentDetails">
+                <!-- Details populated by JavaScript -->
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="closeAppointmentModal()">Close</button>
+                <button class="btn btn-danger" onclick="cancelAppointment()" id="cancelBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-success" onclick="approveAppointment()" id="approveBtn">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button class="btn btn-primary" onclick="completeAppointment()" id="completeBtn">
+                    <i class="fas fa-check-double"></i> Mark Complete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .tab-btn {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="../../js/logger.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/teacher.js"></script>
+    <script>
+        let currentFilter = 'all';
+        let selectedAppointmentId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!requireAuth('teacher')) return;
+            
+            try {
+                initializeFirebase();
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+            }
+            
+            loadAppointments();
+        });
+
+        function filterAppointments(status) {
+            currentFilter = status;
+            
+            // Update active tab
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${status}`).classList.add('active');
+            
+            loadAppointments();
+        }
+
+        function openAppointmentModal(appointmentId) {
+            selectedAppointmentId = appointmentId;
+            const modal = document.getElementById('appointmentModal');
+            modal.style.display = 'block';
+            
+            // Load appointment details
+            const appointment = getAppointmentById(appointmentId);
+            if (appointment) {
+                document.getElementById('appointmentDetails').innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <strong>Date:</strong> ${formatDate(appointment.date)}
+                        </div>
+                        <div>
+                            <strong>Time:</strong> ${formatTime(appointment.startTime)} - ${formatTime(appointment.endTime)}
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Student:</strong> ${appointment.studentName} (${appointment.studentEmail})
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Purpose:</strong> ${appointment.purpose}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Location:</strong> ${appointment.location || 'Not specified'}
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Status:</strong> 
+                        <span class="badge badge-${appointment.status === 'approved' ? 'success' : appointment.status === 'pending' ? 'warning' : appointment.status === 'completed' ? 'primary' : 'danger'}">
+                            ${appointment.status.toUpperCase()}
+                        </span>
+                    </div>
+                    ${appointment.notes ? `<div style="margin-bottom: 1rem;"><strong>Notes:</strong> ${appointment.notes}</div>` : ''}
+                    ${appointment.message ? `<div style="margin-bottom: 1rem;"><strong>Student Message:</strong> ${appointment.message}</div>` : ''}
+                `;
+                
+                // Show/hide buttons based on status
+                const approveBtn = document.getElementById('approveBtn');
+                const cancelBtn = document.getElementById('cancelBtn');
+                const completeBtn = document.getElementById('completeBtn');
+                
+                if (appointment.status === 'pending') {
+                    approveBtn.style.display = 'inline-flex';
+                    cancelBtn.style.display = 'inline-flex';
+                    completeBtn.style.display = 'none';
+                } else if (appointment.status === 'approved') {
+                    approveBtn.style.display = 'none';
+                    cancelBtn.style.display = 'inline-flex';
+                    completeBtn.style.display = 'inline-flex';
+                } else {
+                    approveBtn.style.display = 'none';
+                    cancelBtn.style.display = 'none';
+                    completeBtn.style.display = 'none';
+                }
+            }
+        }
+
+        function closeAppointmentModal() {
+            document.getElementById('appointmentModal').style.display = 'none';
+            selectedAppointmentId = null;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('appointmentModal');
+            if (event.target === modal) {
+                closeAppointmentModal();
+            }
+        }
+    </script>
+</body>
+</html>
